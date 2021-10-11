@@ -12,6 +12,7 @@ const config = require('./config');
 const fs = require('fs');
 const _data = require('./lib/data');
 const handlers = require('./controller/handlers');
+const jsonService = require('./services/json-service');
 
 // http server should respond all request!!
 const httpServer = http.createServer((req, res)=>{
@@ -41,7 +42,7 @@ httpsServer.listen(config.httpsPort, () => {
 
 
 // routes
-const routes = {
+const router = {
     'user': handlers.userHandler,
     'cart': handlers.cartHandler
 };
@@ -65,21 +66,17 @@ const unifiedServer = (req, res) => {
     let buffer = '';
     req.on('data', data => {
         buffer += decoder.write(data);
-    });
+    });  
     req.on('end', () => {
         buffer += decoder.end();
-        console.log(headers);
-        console.log(typeof(handlers[trimmedPath]));
-        console.log(typeof(handlers[trimmedPath]) != undefined);
-        // choose handler for specific path, if not found return not found handler
-        const chooseHandler = typeof(handlers[trimmedPath]) !== 'undefined' ? handlers[trimmedPath] : handlers.notFound;
+        const chooseHandler = typeof(router[trimmedPath]) !== 'undefined' ? router[trimmedPath] : handlers.notFound;
         console.log(chooseHandler);
         const data = {
             trimmedPath,
             queryStringObject,
             method,
             headers,
-            payload: buffer
+            payload: jsonService.jsonToObject(buffer)
         };
 
         chooseHandler(data, (statusCode, payload) => {
@@ -87,17 +84,12 @@ const unifiedServer = (req, res) => {
             const status = typeof(statusCode) === 'number' ? statusCode : 200;
             // use payload 
             payload = typeof(payload) === 'object' ? payload : {};
-            const payloadString = JSON.stringify(payload);
+            const payloadString = jsonService.objectToJson(payload);
             // return resposne 
             res.setHeader('Content-type', 'application/json');
             res.writeHead(status);
             res.end(payloadString);
         });
-
-        // send response
-        // res.end(`Request received on path: ${trimmedPath} with method ${method} -- query: ${JSON.stringify(queryStringObject)}`);
-        // Log request path
-        console.log(`${buffer}`);
     });
 }
 

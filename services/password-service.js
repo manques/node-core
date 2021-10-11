@@ -12,14 +12,13 @@ const passwordService = {};
 passwordService.hash = (password) => {
     // hash password 
     if(typeof(password) === 'string' && password.length > 0){
-
+        const hash = crypto.createHash('sha256', config.passwordSecret)
+                       .update(password)
+                       .digest('hex');
+        return hash;
     } else {
         return false;
     }
-    const hash = crypto.createHash('sha256', config.passwordSecret)
-                       .update(password)
-                       .digest('hex');
-    return hash;
 }
 
 module.exports = passwordService;

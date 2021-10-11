@@ -8,8 +8,8 @@ const cart = require('./cart-handler');
 
 // routes handler object
 const handlers = {
-    user,
-    cart
+    // user,
+    // cart
 };
 const acceptableMethod = ['post', 'get', 'put', 'delete'];
 // user routes handler
@@ -18,7 +18,7 @@ const acceptableMethod = ['post', 'get', 'put', 'delete'];
 handlers.userHandler = (data, callback) => {
     
     if(acceptableMethod.indexOf(data.method) > -1){
-        handlers.user[data.method](data, callback);
+        user[data.method](data, callback);
     } else {
         callback('405');
     }
@@ -26,7 +26,7 @@ handlers.userHandler = (data, callback) => {
 // cart routes handler
 handlers.cartHandler = (data, callback) => {
     if(acceptableMethod.indexOf(data.method) > -1){
-        handlers.cart[data.method](data, callback);
+        cart[data.method](data, callback);
     } else {
         callback('405');
     }
@@ -38,5 +38,7 @@ handlers.notFound = (data, callback) => {
     callback(404);
 }
 
-module.export = handlers;
+// console.log(handlers);
+
+module.exports = handlers;
 
