@@ -1,6 +1,7 @@
 const _data = require('../lib/data');
 const { fieldChecker, validityEvery, validitySome } = require('../services/field-service');
 const passwordService = require('../services/password-service');
+const { tokenVerify } = require('../services/random-service');
 
 // user container for all method
 const user = {};
@@ -61,19 +62,26 @@ user.get = (data, callback) => {
     // check that the phone number  is valid
     console.log(data);
     const phone = fieldChecker(data.queryStringObject.phone, 'phone', 10);
+    const token = fieldChecker(data.headers.token, 'string');
     if(validityEvery({phone})) {
-        _data.read('users', phone, (err, user) => {
-            console.log(err);
-            console.log(user);
-            if(!err && user){
-                delete user.password;
-                callback(200, user);
+        tokenVerify(token, phone, isVerifyToken => {
+            if(isVerifyToken){
+                _data.read('users', phone, (err, user) => {
+                    console.log(err);
+                    console.log(user);
+                    if(!err && user){
+                        delete user.password;
+                        callback(200, user);
+                    } else {
+                        callback(400, { Error: 'user is not exists!!'});
+                    }
+                });
             } else {
-                callback(400, { Error: 'user is not exists!!'});
+                callback(400, 'invalid token or token expired');
             }
         });
     } else {
-        callback(404, { Error: 'Phone required fields' });
+        callback(404, { Error: 'missing required fields' });
     }
 }
 
@@ -90,44 +98,51 @@ user.put = (data, callback) => {
         const name = fieldChecker(data.payload.name, 'string');
         const email = fieldChecker(data.payload.email, 'string');
         const password = fieldChecker(data.payload.password, 'string');
+        const token = fieldChecker(data.headers.token, 'string')
         const fields = {
             name, 
             email,
             password, 
         };
         console.log(fields);
-        if(validitySome(fields)){
-            // make sure that the user doesnot already exist.
-            _data.read('users', phone.toString(), (err, user) => {
-                console.log(err);
-                if(!err){
-                        if(name) {
-                            user.name = name;
+        tokenVerify(token, phone, isVerifyToken => {
+            if(isVerifyToken){
+                if(validitySome({...fields})){
+                    // make sure that the user doesnot already exist.
+                    _data.read('users', phone.toString(), (err, user) => {
+                        console.log(err);
+                        if(!err){
+                                if(name) {
+                                    user.name = name;
+                                }
+                                if(email){
+                                    user.email = email;
+                                }
+                               if(password){
+                                    // hash password
+                                    const hashPassword = passwordService.hash(password);
+                                    user.password = hashPassword;
+                               } 
+                               
+                                _data.update('users', phone, user, err => {
+                                    if(!err) {
+                                        delete user.password;
+                                    callback(false, user);
+                                    } else {
+                                        callback('Error update user!!');
+                                    }
+                                });
+                        } else {
+                            callback(400, { Error: `user of this ${phone} is not exist!!` });
                         }
-                        if(email){
-                            user.email = email;
-                        }
-                       if(password){
-                            // hash password
-                            const hashPassword = passwordService.hash(password);
-                            user.password = hashPassword;
-                       } 
-                       
-                        _data.update('users', phone, user, err => {
-                            if(!err) {
-                                delete user.password;
-                            callback(false, user);
-                            } else {
-                                callback('Error update user!!');
-                            }
-                        });
+                    });
                 } else {
-                    callback(400, { Error: `user of this ${phone} is not exist!!` });
+                    callback(400, { Error: 'Missing required fields' });
                 }
-            });
-        } else {
-            callback(400, { Error: 'Missing required fields' });
-        }
+            } else {
+                callback(400, 'invalid token or token expired');
+            }
+        });
     } else {
         callback(404, { Error: 'Phone required fields' });
     }
@@ -138,16 +153,23 @@ user.put = (data, callback) => {
 // @TODO only let an authenticated user delete object, Don't let delete anyone
 user.delete = (data, callback) => {
     const phone = fieldChecker(data.queryStringObject.phone, 'phone', 10);
-    if(validityEvery({phone})) {
-        _data.delete('users', phone, err => {
-            if(!err){
-                callback(false, {phone});
+    const token = fieldChecker(data.headers.token, 'string');
+    if(validityEvery({phone, token})) {
+        tokenVerify(token, phone, isVerifyToken => {
+            if(isVerifyToken){
+                _data.delete('users', phone, err => {
+                    if(!err){
+                        callback(false, {phone});
+                    } else {
+                        callback(404, { Error: 'user is not exists!!'});
+                    }
+                });
             } else {
-                callback(404, { Error: 'user is not exists!!'});
+                callback(400, 'invalid token or token expired');
             }
         });
     } else {
-        callback(404, { Error: 'phone required field.'});
+        callback(404, { Error: 'Phone required fields' });
     }
 }
 

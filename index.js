@@ -44,7 +44,8 @@ httpsServer.listen(config.httpsPort, () => {
 // routes
 const router = {
     'user': handlers.userHandler,
-    'cart': handlers.cartHandler
+    'cart': handlers.cartHandler,
+    'token': handlers.tokenHandler
 };
 
 
@@ -81,11 +82,13 @@ const unifiedServer = (req, res) => {
 
         chooseHandler(data, (statusCode, payload) => {
             // use status code callback handler
+            console.log(statusCode, payload);
             const status = typeof(statusCode) === 'number' ? statusCode : 200;
             // use payload 
             payload = typeof(payload) === 'object' ? payload : {};
             const payloadString = jsonService.objectToJson(payload);
             // return resposne 
+            console.log(status, payloadString);
             res.setHeader('Content-type', 'application/json');
             res.writeHead(status);
             res.end(payloadString);
