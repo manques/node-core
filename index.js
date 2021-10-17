@@ -43,9 +43,11 @@ httpsServer.listen(config.httpsPort, () => {
 
 // routes
 const router = {
+    // 'ping': handlers.pingHandler,
     'user': handlers.userHandler,
     'cart': handlers.cartHandler,
-    'token': handlers.tokenHandler
+    'token': handlers.tokenHandler,
+    'checks': handlers.checkHandler
 };
 
 

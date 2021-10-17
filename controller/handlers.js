@@ -6,6 +6,7 @@
 const user = require('./user-handler');
 const cart = require('./cart-handler');
 const token = require('./token-handler');
+const check = require('./check-handler');
 
 // routes handler object
 const handlers = {};
@@ -32,6 +33,17 @@ handlers.tokenHandler = (data, callback) => {
         callback(405, { Error: 'Method not allow!!'});
     }
 }
+
+// checks routes handler
+handlers.checkHandler = (data, callback) => {
+    if(acceptableMethod.indexOf(data.method) > -1){
+        check[data.method](data, callback);
+    } else {
+        // method not allow
+        callback(405, { Error: 'Method not allow!!'});
+    }
+}
+
 
 // cart routes handler
 handlers.cartHandler = (data, callback) => {
